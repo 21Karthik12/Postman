@@ -1,19 +1,16 @@
 from flask import Flask, render_template, request, jsonify
 import flask_socketio
 from flask_cors import CORS
-import requests
 from datetime import datetime
-from flask_pymongo import PyMongo
-from bson import ObjectId
+import secrets
 
-
-uri = "mongodb+srv://21karthik1202:<password>@cluster0.izvmntj.mongodb.net/movie_database?retryWrites=true&w=majority"
 
 app = Flask(__name__)
-app.config['MONGO_URI'] = uri
 CORS(app)
 server = flask_socketio.SocketIO(app, cors_allowed_origins="*")
-mongo = PyMongo(app)
+
+
+users = {}
 
 
 @app.route('/')
@@ -23,43 +20,47 @@ def index():
 
 @app.route('/addMovie', methods=['POST'])
 def add_movie():
+    global users
     request_data = request.get_json()
     request_data['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    result = mongo.db.movies.insert_one(request_data)
-    return jsonify({'id': str(result.inserted_id)})
+    user_id = secrets.token_hex(15)
+    users[user_id] = request_data
+    return jsonify({'id': user_id})
 
 
 @app.route('/getAllMovies', methods=['GET'])
 def get_all_movies():
-    users = mongo.db.movies.find()
-    movies_list = [{'name': user['name'], 'movie': user['movie'], 'actor': user['actor']} for user in users]
-    return jsonify(movies_list)
+    global users
+    return jsonify(list(users.values()))
 
 
 @app.route('/getOneMovie/<id>', methods=['GET'])
 def get_one_movie(id):
-    user = mongo.db.movies.find_one({'_id': ObjectId(id)})
-    if user:
+    global users
+    if id in users.keys():
+        user = users[id]
         return jsonify(user)
     return jsonify({'error': 'ID not found'}), 404
 
 
 @app.route('/deleteMovie/<id>', methods=['GET', 'POST'])
 def delete_movie(id):
-    result = mongo.db.movies.delete_one({'_id': ObjectId(id)})
-    if result.deleted_count > 0:
+    global users
+    result = users.pop(id, None)
+    if result is not None:
         return jsonify({'message': 'User deleted successfully'})
     return jsonify({'error': 'ID not found'}), 404
 
 
 @app.route('/updateMovie/<id>', methods=['POST'])
 def update_movie(id):
+    global users
     request_data = request.get_json()
     request_data['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    result = mongo.db.movies.update_one({'_id': ObjectId(id)}, {'$set': request_data})
-    if result.modified_count > 0:
+    if id in users.keys():
+        users[id] = request_data
         return jsonify({'message': 'User updated successfully'})
-    return jsonify({'error': 'User not found or no changes applied'}), 404
+    return jsonify({'error': 'User not found'}), 404
 
 
 @server.on('connect', namespace='/')
