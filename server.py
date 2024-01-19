@@ -87,4 +87,4 @@ def handle_json_response(data):
 
 
 if __name__ == '__main__':
-    server.run(app, host='0.0.0.0', port=5000, debug=True)
+    server.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
