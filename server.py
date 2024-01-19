@@ -29,7 +29,7 @@ def add_movie():
 @app.route('/getAllMovies', methods=['GET'])
 def get_all_movies():
     global users
-    return jsonify(list(users.values()))
+    return jsonify([{'id': id, **user} for id, user in users.items()])
 
 
 @app.route('/getOneMovie/<id>', methods=['GET'])
@@ -37,11 +37,12 @@ def get_one_movie(id):
     global users
     if id in users.keys():
         user = users[id]
+        user['id'] = id
         return jsonify(user)
     return jsonify({'error': 'ID not found'}), 404
 
 
-@app.route('/deleteMovie/<id>', methods=['GET', 'POST'])
+@app.route('/deleteMovie/<id>', methods=['DELETE'])
 def delete_movie(id):
     global users
     result = users.pop(id, None)
@@ -50,7 +51,7 @@ def delete_movie(id):
     return jsonify({'error': 'ID not found'}), 404
 
 
-@app.route('/updateMovie/<id>', methods=['POST'])
+@app.route('/updateMovie/<id>', methods=['PUT'])
 def update_movie(id):
     global users
     request_data = request.get_json()
