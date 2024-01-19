@@ -62,4 +62,4 @@ def update_movie(id):
 
 
 if __name__ == '__main__':
-    app.run(port=5000, allow_unsafe_werkzeug=True)
+    app.run(port=5000)
