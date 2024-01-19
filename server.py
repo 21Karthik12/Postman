@@ -25,6 +25,7 @@ def add_movie():
     request_data['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     user_id = secrets.token_hex(15)
     users[user_id] = request_data
+    server.emit('json', users, namespace='/')
     return jsonify({'id': user_id})
 
 
@@ -49,6 +50,7 @@ def delete_movie(id):
     result = users.pop(id, None)
     if result is not None:
         return jsonify({'message': 'User deleted successfully'})
+    server.emit('json', users, namespace='/')
     return jsonify({'error': 'ID not found'}), 404
 
 
@@ -60,6 +62,7 @@ def update_movie(id):
     if id in users.keys():
         users[id] = request_data
         return jsonify({'message': 'User updated successfully'})
+    server.emit('json', users, namespace='/')
     return jsonify({'error': 'User not found'}), 404
 
 
@@ -71,19 +74,6 @@ def handle_connect():
 @server.on('disconnect', namespace='/')
 def handle_disconnect():
     print('Frontend disconnected')
-
-
-@server.on('json_message', namespace='/')
-def handle_json_message(data):
-    print('JSON Message:', data)
-    server.emit('json_response', {
-                'response': 'Received your JSON message'}, namespace='/')
-    server.emit('json', data, namespace='/')
-
-
-@server.on('json_response', namespace='/')
-def handle_json_response(data):
-    print('JSON Response:', data)
 
 
 if __name__ == '__main__':
